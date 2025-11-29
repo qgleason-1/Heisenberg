@@ -1,7 +1,7 @@
 import numpy as np
 import random
 
-# Pauli matrices 
+
 sigma_x = np.array([[0, 1],
                     [1, 0]], dtype=complex)
 
@@ -11,16 +11,9 @@ sigma_y = np.array([[0, -1j],
 sigma_z = np.array([[1,  0],
                     [0, -1]], dtype=complex)
 
-def random_pauli_spin():
-    """Return a random Pauli matrix (sigx, sigy, or sigz)"""
-    return random.choice([sigma_x, sigma_y, sigma_z])
-
 
 def initialize_lattice(size):
-    """
-    Initialize a size×size lattice where each site contains
-    the 3 Pauli matrices [sigx, sigy, sigz]
-    """
+   
     lattice = np.empty((size, size, 3), dtype=object)
     for i in range(size):
         for j in range(size):
@@ -28,44 +21,33 @@ def initialize_lattice(size):
             lattice[i, j, 1] = sigma_y
             lattice[i, j, 2] = sigma_z
     return lattice
+
+
+def pauli_dot(Si, Sj, Jx=1.0, Jy=1.0, Jz=1.0):
     
-def pauli_dot(Si, Sn, Jx=1.0, Jy=1.0, Jz=1.0):
-    """
-    Compute Jx * sigixsignx + Jy * sigiysigny + Jz * sigizsignz
-    as scalars via (1/2) Tr(). Si, Sn are arrays [sigx,sigy,sigz].
-    """
     return (
-        Jx * (np.trace(Si[0] @ Sn[0]).real / 2.0) +
-        Jy * (np.trace(Si[1] @ Sn[1]).real / 2.0) +
-        Jz * (np.trace(Si[2] @ Sn[2]).real / 2.0)
+        Jx * (np.trace(Si[0] @ Sj[0]).real / 2.0) +
+        Jy * (np.trace(Si[1] @ Sj[1]).real / 2.0) +
+        Jz * (np.trace(Si[2] @ Sj[2]).real / 2.0)
     )
 
 
-# Energies
 def local_energy(lattice, i, j, Jx=1.0, Jy=1.0, Jz=1.0):
-    """
-    Energy contribution of site (i,j) with its 4 nearest neighbors:
-      H = - sum_{<ij>} (Jx sigixsigjx + Jy sigiysigjy + Jz sigizsigjz)
-    Periodic boundary conditions.
-    """
+   
     L = lattice.shape[0]
     Si = lattice[i, j]
 
     nn = [
-        lattice[(i + 1) % L, j],
-        lattice[(i - 1) % L, j],
-        lattice[i, (j + 1) % L],
-        lattice[i, (j - 1) % L],
+        lattice[(i + 1) % L, j],       # down
+        lattice[(i - 1) % L, j],       # up
+        lattice[i, (j + 1) % L],       # right
+        lattice[i, (j - 1) % L],       # left
     ]
 
-    return -sum(pauli_dot(Si, Sn, Jx, Jy, Jz) for Sn in nn)
+    return -sum(pauli_dot(Si, Sn, Jx=Jx, Jy=Jy, Jz=Jz) for Sn in nn)
 
 
 def total_energy(lattice, Jx=1.0, Jy=1.0, Jz=1.0):
-    """
-    Total Heisenberg XYZ nearest-neighbor energy.
-    Divide by 2 to correct for double-counting bonds.
-    """
     L = lattice.shape[0]
     E = 0.0
     for i in range(L):
@@ -73,18 +55,57 @@ def total_energy(lattice, Jx=1.0, Jy=1.0, Jz=1.0):
             E += local_energy(lattice, i, j, Jx=Jx, Jy=Jy, Jz=Jz)
     return 0.5 * E
 
-#Metropolis
+
+def bond_energy(lattice, i, j, ip, jp, Jx=1.0, Jy=1.0, Jz=1.0):
+    
+    Si = lattice[i, j]
+    Sj = lattice[ip, jp]
+    return -pauli_dot(Si, Sj, Jx=Jx, Jy=Jy, Jz=Jz)
+
+
+def energies_H1_H2(lattice, Jx=1.0, Jy=1.0, Jz=1.0):
+    
+    L = lattice.shape[0]
+    H1 = 0.0
+    H2 = 0.0
+
+    for i in range(L):
+        for j in range(L):
+            # bond to the right: (i,j) - (i, j+1)
+            ip, jp = i, (j + 1) % L
+            e = bond_energy(lattice, i, j, ip, jp, Jx=Jx, Jy=Jy, Jz=Jz)
+            if (i + j) % 2 == 0:
+                H1 += e
+            else:
+                H2 += e
+
+            # bond downward: (i,j) - (i+1, j)
+            ip, jp = (i + 1) % L, j
+            e = bond_energy(lattice, i, j, ip, jp, Jx=Jx, Jy=Jy, Jz=Jz)
+            if (i + j) % 2 == 0:
+                H1 += e
+            else:
+                H2 += e
+
+    return H1, H2
+    # total_energy(lattice) should ≈ H1 + H2.
+
+
 def new_pauli_set():
-    # Return length-3 OBJECT array: [Sx, Sy, Sz]
+   
     out = np.empty(3, dtype=object)
     out[0] = sigma_x if random.random() < 0.5 else -sigma_x
     out[1] = sigma_y if random.random() < 0.5 else -sigma_y
     out[2] = sigma_z if random.random() < 0.5 else -sigma_z
     return out
 
+
 def metropolis_step(lattice, T, Jx=1.0, Jy=1.0, Jz=1.0):
+    
     L = lattice.shape[0]
     i, j = random.randint(0, L - 1), random.randint(0, L - 1)
+    T = max(T, 1e-6)
+
     E_old = local_energy(lattice, i, j, Jx=Jx, Jy=Jy, Jz=Jz)
     old_spin = lattice[i, j].copy()
 
@@ -95,18 +116,21 @@ def metropolis_step(lattice, T, Jx=1.0, Jy=1.0, Jz=1.0):
 
     E_new = local_energy(lattice, i, j, Jx=Jx, Jy=Jy, Jz=Jz)
     dE = E_new - E_old
-    T = max(T, 1e-6)
+
     if not (dE <= 0.0 or random.random() < np.exp(-dE / T)):
+        # reject: restore old spin
         lattice[i, j, 0] = old_spin[0]
         lattice[i, j, 1] = old_spin[1]
         lattice[i, j, 2] = old_spin[2]
 
 
 def metropolis_sweep_all_sites(lattice, T, Jx=1.0, Jy=1.0, Jz=1.0):
+   
     L = lattice.shape[0]
     idx = [(i, j) for i in range(L) for j in range(L)]
     random.shuffle(idx)
     T = max(T, 1e-6)
+
     for (i, j) in idx:
         E_old = local_energy(lattice, i, j, Jx=Jx, Jy=Jy, Jz=Jz)
         old_spin = lattice[i, j].copy()
@@ -116,32 +140,44 @@ def metropolis_sweep_all_sites(lattice, T, Jx=1.0, Jy=1.0, Jz=1.0):
         lattice[i, j, 1] = proposal[1]
         lattice[i, j, 2] = proposal[2]
 
-        E_new = local_energy(lattice, i, j, Jx=Jx, Jy=Jy, Jz=Jz)
+        E_new = local_energy(lattice, i, j, Jx=Jx, Jy=Jz, Jz=Jz)
         dE = E_new - E_old
+
         if not (dE <= 0.0 or random.random() < np.exp(-dE / T)):
+            # reject: restore old spin
             lattice[i, j, 0] = old_spin[0]
             lattice[i, j, 1] = old_spin[1]
             lattice[i, j, 2] = old_spin[2]
 
-def simulate_heisenberg(size, temperature, num_sweeps, thermalization_sweeps, J=1.0):
-    """
-    Run the Metropolis simulation using full sweeps (each site visited once).
-    Returns:
-        lattice    – final lattice configuration
-        energies   – list of energy per spin measured after thermalization
-    """
+def simulate_heisenberg(size, temperature, num_sweeps,
+                        thermalization_sweeps, J=1.0):
+  
     lattice = initialize_lattice(size)
+
     energies = []
+    H1_list = []
+    H2_list = []
+
     N = size * size
 
     for sweep in range(num_sweeps + thermalization_sweeps):
-        # One full sweep over ALL sites (random order)
+
+        # Metropolis sweep
         metropolis_sweep_all_sites(lattice, temperature, Jx=J, Jy=J, Jz=J)
 
-        # Start recording after thermalization
+        # Measurements after thermalization
         if sweep >= thermalization_sweeps:
-            E = total_energy(lattice, Jx=J, Jy=J, Jz=J) / N
-            energies.append(E)
 
-    return lattice, energies
+            # Total energy per site
+            E_tot = total_energy(lattice, Jx=J, Jy=J, Jz=J) / N
 
+            # Checkerboard energies per site
+            H1, H2 = energies_H1_H2(lattice, Jx=J, Jy=J, Jz=J)
+            H1 /= N
+            H2 /= N
+
+            energies.append(E_tot)
+            H1_list.append(H1)
+            H2_list.append(H2)
+
+    return lattice, energies, H1_list, H2_list
