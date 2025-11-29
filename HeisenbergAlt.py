@@ -1,13 +1,33 @@
 from Heisenberg_Library import *
+import numpy as np
+
 if __name__ == "__main__":
+
     lattice_size = 4
     temperature = 2.8
-    num_sweeps = 100
-    thermalization_sweeps = 100
+    num_sweeps = 1000
+    thermalization_sweeps = 1000
     J = 1.0
 
-    final_lattice, energies = simulate_heisenberg(
-        lattice_size, temperature, num_sweeps, thermalization_sweeps, J=1.0
-
-    ## export data to file (.csv)
+    final_lattice, energies, H1_list, H2_list = simulate_heisenberg(
+        lattice_size, temperature, num_sweeps, thermalization_sweeps, J=J
     )
+
+    energies = np.array(energies)
+    H1_list = np.array(H1_list)
+    H2_list = np.array(H2_list)
+
+    sweeps = np.arange(len(energies))
+
+    output = np.column_stack((sweeps, energies, H1_list, H2_list))
+
+    filename = f"heisenberg_L{lattice_size}_T{temperature}.csv"
+
+    np.savetxt(
+        filename,
+        output,
+        delimiter=",",
+        header="sweep,energy_per_site,H1_per_site,H2_per_site",
+        comments=""
+    )
+
