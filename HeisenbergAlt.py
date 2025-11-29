@@ -4,7 +4,7 @@ import numpy as np
 if __name__ == "__main__":
 
     lattice_size = 25
-    temperature = 0.2
+    temperature = 4
     num_sweeps = 1000
     thermalization_sweeps = 1000
     J = 1.0
