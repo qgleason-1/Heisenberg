@@ -3,14 +3,14 @@ import numpy as np
 
 if __name__ == "__main__":
 
-    L = 16
+    L = 17
     T = 0.1
     num_sweeps = 1000
     thermal_sweeps = 1000
     J = 1.0
 
-    # Chosen imaginary-time step (since we are NOT doing Trotterization)
-    delta_tau = 0.1   # you control this manually now
+   
+    delta_tau = 0.1  
 
     final_lattice, energies, H1_list, H2_list = simulate_heisenberg(
         L,
@@ -19,7 +19,9 @@ if __name__ == "__main__":
         thermal_sweeps,
         J=J
     )
-
+    
+    np.save(f"lattice_L{L}_T{T}.npy", final_lattice)
+    
     energies = np.array(energies)
     H1_list = np.array(H1_list)
     H2_list = np.array(H2_list)
