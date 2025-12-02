@@ -181,3 +181,19 @@ def simulate_heisenberg(size, temperature, num_sweeps,
             H2_list.append(H2)
 
     return lattice, energies, H1_list, H2_list
+
+def compute_Pc_from_snapshots(H1_list, H2_list, delta_tau, N):
+    
+    H1_arr = np.array(H1_list)
+    H2_arr = np.array(H2_list)
+
+    # total energy for each configuration (not per site anymore)
+    H_tot = N * (H1_arr + H2_arr)
+
+    # numerical stability: shift by min(H_tot)
+    exponent = -delta_tau * (H_tot - H_tot.min())
+    weights = np.exp(exponent)
+
+    Z = weights.sum()
+    Pc = weights / Z
+    return Pc, Z
