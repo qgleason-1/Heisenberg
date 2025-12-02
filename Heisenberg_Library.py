@@ -140,7 +140,7 @@ def metropolis_sweep_all_sites(lattice, T, Jx=1.0, Jy=1.0, Jz=1.0):
         lattice[i, j, 1] = proposal[1]
         lattice[i, j, 2] = proposal[2]
 
-        E_new = local_energy(lattice, i, j, Jx=Jx, Jy=Jz, Jz=Jz)
+        E_new = local_energy(lattice, i, j, Jx=Jx, Jy=Jy, Jz=Jz)
         dE = E_new - E_old
 
         if not (dE <= 0.0 or random.random() < np.exp(-dE / T)):
