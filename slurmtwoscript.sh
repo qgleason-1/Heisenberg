@@ -10,6 +10,6 @@ pwd; hostname; date
 
 module load anaconda
 
-python HeisenbergAlt.py
+python HeisenbergProb.py
 
 date
