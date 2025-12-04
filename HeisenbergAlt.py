@@ -7,7 +7,7 @@ if __name__ == "__main__":
     temperature = 0.1
     num_sweeps = 1000
     thermalization_sweeps = 1000
-    J = 1.0
+    J = 0.5
 
     final_lattice, energies, H1_list, H2_list = simulate_heisenberg(
         lattice_size, temperature, num_sweeps, thermalization_sweeps, J=J
