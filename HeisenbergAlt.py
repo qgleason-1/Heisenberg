@@ -4,7 +4,7 @@ import numpy as np
 if __name__ == "__main__":
 
     lattice_size = 20
-    temperature = 1.5
+    temperature = 0.1
     num_sweeps = 1000
     thermalization_sweeps = 1000
     J = 1.0
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     output = np.column_stack((sweeps, energies, H1_list, H2_list))
 
-    filename = f"heisenberg_L{lattice_size}_T{temperature}.csv"
+    filename = f"heisenberg_L{lattice_size}_T{temperature}_J{J}.csv"
 
     np.savetxt(
         filename,
