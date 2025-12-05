@@ -1,7 +1,7 @@
 import numpy as np
 import random
 
-
+#Set up Pauli Matrices 
 sigma_x = np.array([[0, 1],
                     [1, 0]], dtype=complex)
 
@@ -11,7 +11,7 @@ sigma_y = np.array([[0, -1j],
 sigma_z = np.array([[1,  0],
                     [0, -1]], dtype=complex)
 
-
+#Initialize the lattice 
 def initialize_lattice(size):
    
     lattice = np.empty((size, size, 3), dtype=object)
@@ -22,7 +22,7 @@ def initialize_lattice(size):
             lattice[i, j, 2] = sigma_z
     return lattice
 
-
+#Compute the Pauli dot products 
 def pauli_dot(Si, Sj, Jx=1.0, Jy=1.0, Jz=1.0):
     
     return (
@@ -31,7 +31,7 @@ def pauli_dot(Si, Sj, Jx=1.0, Jy=1.0, Jz=1.0):
         Jz * (np.trace(Si[2] @ Sj[2]).real / 2.0)
     )
 
-
+#Compute local energy 
 def local_energy(lattice, i, j, Jx=1.0, Jy=1.0, Jz=1.0):
    
     L = lattice.shape[0]
@@ -46,7 +46,7 @@ def local_energy(lattice, i, j, Jx=1.0, Jy=1.0, Jz=1.0):
 
     return -sum(pauli_dot(Si, Sn, Jx=Jx, Jy=Jy, Jz=Jz) for Sn in nn)
 
-
+#Total energy
 def total_energy(lattice, Jx=1.0, Jy=1.0, Jz=1.0):
     L = lattice.shape[0]
     E = 0.0
@@ -62,7 +62,7 @@ def bond_energy(lattice, i, j, ip, jp, Jx=1.0, Jy=1.0, Jz=1.0):
     Sj = lattice[ip, jp]
     return -pauli_dot(Si, Sj, Jx=Jx, Jy=Jy, Jz=Jz)
 
-
+#Split up the Hamiltonian into two parts that sum to the total
 def energies_H1_H2(lattice, Jx=1.0, Jy=1.0, Jz=1.0):
     
     L = lattice.shape[0]
@@ -90,7 +90,7 @@ def energies_H1_H2(lattice, Jx=1.0, Jy=1.0, Jz=1.0):
     return H1, H2
     # total_energy(lattice) should ≈ H1 + H2.
 
-
+#Propose a new set 
 def new_pauli_set():
    
     out = np.empty(3, dtype=object)
@@ -99,7 +99,7 @@ def new_pauli_set():
     out[2] = sigma_z if random.random() < 0.5 else -sigma_z
     return out
 
-
+#Metropolis step
 def metropolis_step(lattice, T, Jx=1.0, Jy=1.0, Jz=1.0):
     
     L = lattice.shape[0]
@@ -123,7 +123,7 @@ def metropolis_step(lattice, T, Jx=1.0, Jy=1.0, Jz=1.0):
         lattice[i, j, 1] = old_spin[1]
         lattice[i, j, 2] = old_spin[2]
 
-
+#Sweep every site 
 def metropolis_sweep_all_sites(lattice, T, Jx=1.0, Jy=1.0, Jz=1.0):
    
     L = lattice.shape[0]
@@ -148,7 +148,8 @@ def metropolis_sweep_all_sites(lattice, T, Jx=1.0, Jy=1.0, Jz=1.0):
             lattice[i, j, 0] = old_spin[0]
             lattice[i, j, 1] = old_spin[1]
             lattice[i, j, 2] = old_spin[2]
-
+          
+#Simulate the Heisenberg Model
 def simulate_heisenberg(size, temperature, num_sweeps,
                         thermalization_sweeps, J=1.0):
   
@@ -181,7 +182,8 @@ def simulate_heisenberg(size, temperature, num_sweeps,
             H2_list.append(H2)
 
     return lattice, energies, H1_list, H2_list
-
+                          
+#Compute the probability for an arrangement 
 def compute_Pc_from_snapshots(H1_list, H2_list, delta_tau, N):
     
     H1_arr = np.array(H1_list)
