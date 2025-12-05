@@ -4,10 +4,10 @@ import numpy as np
 if __name__ == "__main__":
 
     lattice_size = 20
-    temperature = 1.5
+    temperature = 0.1
     num_sweeps = 1000
     thermalization_sweeps = 1000
-    J = 0.5
+    J = -1
 
     final_lattice, energies, H1_list, H2_list = simulate_heisenberg(
         lattice_size, temperature, num_sweeps, thermalization_sweeps, J=J
